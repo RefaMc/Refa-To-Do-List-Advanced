@@ -241,11 +241,26 @@
             transform: rotate(3deg);
         }
 
+        .task.compact {
+            padding: 12px 18px;
+            min-height: auto;
+        }
+
+        .task.compact .task-desc,
+        .task.compact .progress-container,
+        .task.compact .complete-btn {
+            display: none;
+        }
+
         .task-title {
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 8px;
-            padding-right: 30px;
+            padding-right: 60px;
+        }
+
+        .task.compact .task-title {
+            margin-bottom: 0;
         }
 
         .task-desc {
@@ -263,6 +278,10 @@
             font-size: 0.9rem;
             align-self: flex-start;
             margin-bottom: 12px;
+        }
+
+        .task.compact .task-price {
+            margin-bottom: 0;
         }
 
         .task-actions {
@@ -322,16 +341,40 @@
             background-color: rgba(255, 255, 255, 0.2);
         }
 
-        .delete-btn {
+        .task-controls {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .task-btn {
             background: none;
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 1rem;
-            transition: color 0.2s;
+            font-size: 0.9rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .task-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .collapse-btn:hover {
+            color: var(--accent-button);
+        }
+
+        .edit-btn:hover {
+            color: var(--success);
         }
 
         .delete-btn:hover {
@@ -448,6 +491,29 @@
 
         .currency-group .form-select {
             flex: 1;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: var(--text-primary);
         }
 
         .modal-footer {
@@ -632,11 +698,22 @@
                 <div class="form-group">
                     <label class="form-label" for="task-price">Harga (opsional)</label>
                     <div class="currency-group">
-                        <input type="number" class="form-input" id="task-price" placeholder="Masukkan harga">
-                        <select class="form-select" id="task-currency">
+                        <input type="number" class="form-input" id="task-price" placeholder="Masukkan harga" onchange="formatPriceInput()">
+                        <select class="form-select" id="task-currency" onchange="formatPriceInput()">
                             <option value="IDR">IDR</option>
                             <option value="USD">USD</option>
                         </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Warna Task (opsional)</label>
+                    <div class="color-options">
+                        <div class="color-option selected" style="background-color: #5b6876;" data-color="#5b6876"></div>
+                        <div class="color-option" style="background-color: #3498db;" data-color="#3498db"></div>
+                        <div class="color-option" style="background-color: #e74c3c;" data-color="#e74c3c"></div>
+                        <div class="color-option" style="background-color: #f39c12;" data-color="#f39c12"></div>
+                        <div class="color-option" style="background-color: #2ecc71;" data-color="#2ecc71"></div>
+                        <div class="color-option" style="background-color: #9b59b6;" data-color="#9b59b6"></div>
                     </div>
                 </div>
             </div>
@@ -651,20 +728,21 @@
         // Data contoh
         let tasks = {
             ide: [
-                { id: 1, title: "Buat aplikasi to-do list", desc: "Implementasi drag & drop dan fitur export/import", price: 500000, currency: "IDR", progress: 0 },
-                { id: 2, title: "Desain UI yang menarik", desc: "Gunakan warna yang konsisten dan layout responsif", price: 150000, currency: "IDR", progress: 0 }
+                { id: 1, title: "Buat aplikasi to-do list", desc: "Implementasi drag & drop dan fitur export/import", price: 500000, currency: "IDR", progress: 0, color: "#5b6876", compact: false },
+                { id: 2, title: "Desain UI yang menarik", desc: "Gunakan warna yang konsisten dan layout responsif", price: 150000, currency: "IDR", progress: 0, color: "#5b6876", compact: false }
             ],
             proses: [
-                { id: 3, title: "Testing aplikasi", desc: "Pastikan semua fitur berjalan dengan baik", price: 75000, currency: "IDR", progress: 50 },
-                { id: 4, title: "Optimasi performa", desc: "Tingkatkan kecepatan loading dan responsivitas", price: 100, currency: "USD", progress: 30 }
+                { id: 3, title: "Testing aplikasi", desc: "Pastikan semua fitur berjalan dengan baik", price: 75000, currency: "IDR", progress: 50, color: "#5b6876", compact: false },
+                { id: 4, title: "Optimasi performa", desc: "Tingkatkan kecepatan loading dan responsivitas", price: 100, currency: "USD", progress: 30, color: "#5b6876", compact: false }
             ],
             selesai: [
-                { id: 5, title: "Setup project awal", desc: "Siapkan struktur folder dan file dasar", price: 50000, currency: "IDR", progress: 100 }
+                { id: 5, title: "Setup project awal", desc: "Siapkan struktur folder dan file dasar", price: 50000, currency: "IDR", progress: 100, color: "#5b6876", compact: false }
             ]
         };
 
         let nextId = 6;
         let currentCategory = '';
+        let currentTaskId = null;
         let importCounter = 1;
 
         // Fungsi untuk format harga
@@ -677,6 +755,18 @@
                 return `$${price.toLocaleString('en-US')}`;
             }
             return price;
+        }
+
+        // Fungsi untuk format input harga
+        function formatPriceInput() {
+            const priceInput = document.getElementById('task-price');
+            const currency = document.getElementById('task-currency').value;
+            const price = parseInt(priceInput.value);
+            
+            if (!isNaN(price) && currency === 'IDR') {
+                // Otomatis tambah 3 nol untuk IDR
+                priceInput.value = price * 1000;
+            }
         }
 
         // Fungsi untuk menghitung total pendapatan
@@ -731,10 +821,11 @@
             
             tasks[category].forEach(task => {
                 const taskElement = document.createElement('div');
-                taskElement.className = `task ${category}`;
+                taskElement.className = `task ${category} ${task.compact ? 'compact' : ''}`;
                 taskElement.draggable = true;
                 taskElement.id = `task-${task.id}`;
                 taskElement.setAttribute('ondragstart', 'drag(event)');
+                taskElement.style.borderLeftColor = task.color;
                 
                 let progressControls = '';
                 let completeButton = '';
@@ -744,7 +835,7 @@
                     priceElement = `<div class="task-price">${formatPrice(task.price, task.currency)}</div>`;
                 }
                 
-                if (category === 'proses') {
+                if (category === 'proses' && !task.compact) {
                     progressControls = `
                         <div class="task-actions">
                             <div class="progress-container">
@@ -765,7 +856,7 @@
                     `;
                 }
                 
-                if (category === 'selesai') {
+                if (category === 'selesai' && !task.compact) {
                     completeButton = `
                         <button class="complete-btn" onclick="removeTask(${task.id})">
                             <i class="fas fa-check"></i> Hapus dari Selesai
@@ -774,11 +865,19 @@
                 }
                 
                 taskElement.innerHTML = `
-                    <button class="delete-btn" onclick="deleteTask(${task.id})">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="task-controls">
+                        <button class="task-btn collapse-btn" onclick="toggleCompact(${task.id})" title="${task.compact ? 'Expand' : 'Collapse'}">
+                            <i class="fas ${task.compact ? 'fa-expand' : 'fa-compress'}"></i>
+                        </button>
+                        <button class="task-btn edit-btn" onclick="editTask(${task.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="task-btn delete-btn" onclick="deleteTask(${task.id})" title="Hapus">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <div class="task-title">${task.title}</div>
-                    ${task.desc ? `<div class="task-desc">${task.desc}</div>` : ''}
+                    ${!task.compact && task.desc ? `<div class="task-desc">${task.desc}</div>` : ''}
                     ${priceElement}
                     ${progressControls}
                     ${completeButton}
@@ -795,14 +894,65 @@
             document.getElementById('selesai-count').textContent = tasks.selesai.length;
         }
 
+        // Fungsi untuk toggle compact mode
+        function toggleCompact(taskId) {
+            for (const category in tasks) {
+                const task = tasks[category].find(task => task.id === taskId);
+                if (task) {
+                    task.compact = !task.compact;
+                    renderTasks();
+                    saveToLocalStorage();
+                    break;
+                }
+            }
+        }
+
+        // Fungsi untuk edit task
+        function editTask(taskId) {
+            for (const category in tasks) {
+                const task = tasks[category].find(task => task.id === taskId);
+                if (task) {
+                    currentCategory = category;
+                    currentTaskId = taskId;
+                    
+                    document.getElementById('modal-title').textContent = `Edit Task - ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+                    document.getElementById('task-title').value = task.title;
+                    document.getElementById('task-desc').value = task.desc || '';
+                    document.getElementById('task-price').value = task.price || '';
+                    document.getElementById('task-currency').value = task.currency || 'IDR';
+                    
+                    // Set warna yang dipilih
+                    document.querySelectorAll('.color-option').forEach(option => {
+                        option.classList.remove('selected');
+                        if (option.dataset.color === task.color) {
+                            option.classList.add('selected');
+                        }
+                    });
+                    
+                    document.getElementById('task-modal').style.display = 'flex';
+                    break;
+                }
+            }
+        }
+
         // Fungsi untuk menampilkan modal tambah task
         function showAddTaskModal(category) {
             currentCategory = category;
+            currentTaskId = null;
             document.getElementById('modal-title').textContent = `Tambah Task Baru - ${category.charAt(0).toUpperCase() + category.slice(1)}`;
             document.getElementById('task-title').value = '';
             document.getElementById('task-desc').value = '';
             document.getElementById('task-price').value = '';
             document.getElementById('task-currency').value = 'IDR';
+            
+            // Reset ke warna default
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.color === '#5b6876') {
+                    option.classList.add('selected');
+                }
+            });
+            
             document.getElementById('task-modal').style.display = 'flex';
         }
 
@@ -817,36 +967,66 @@
             const desc = document.getElementById('task-desc').value.trim();
             const price = document.getElementById('task-price').value;
             const currency = document.getElementById('task-currency').value;
+            const selectedColor = document.querySelector('.color-option.selected').dataset.color;
             
             if (!title) {
                 alert('Judul task harus diisi!');
                 return;
             }
             
-            const newTask = {
-                id: nextId++,
-                title: title,
-                desc: desc || null,
-                price: price ? parseInt(price) : null,
-                currency: currency,
-                progress: currentCategory === 'proses' ? 0 : (currentCategory === 'selesai' ? 100 : 0)
-            };
+            if (currentTaskId) {
+                // Edit task yang sudah ada
+                for (const category in tasks) {
+                    const taskIndex = tasks[category].findIndex(task => task.id === currentTaskId);
+                    if (taskIndex !== -1) {
+                        tasks[category][taskIndex].title = title;
+                        tasks[category][taskIndex].desc = desc || null;
+                        tasks[category][taskIndex].price = price ? parseInt(price) : null;
+                        tasks[category][taskIndex].currency = currency;
+                        tasks[category][taskIndex].color = selectedColor;
+                        break;
+                    }
+                }
+            } else {
+                // Tambah task baru
+                const newTask = {
+                    id: nextId++,
+                    title: title,
+                    desc: desc || null,
+                    price: price ? parseInt(price) : null,
+                    currency: currency,
+                    progress: currentCategory === 'proses' ? 0 : (currentCategory === 'selesai' ? 100 : 0),
+                    color: selectedColor,
+                    compact: false
+                };
+                
+                tasks[currentCategory].push(newTask);
+            }
             
-            tasks[currentCategory].push(newTask);
             renderTasks();
             closeTaskModal();
             saveToLocalStorage();
         }
 
+        // Event listener untuk color options
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
         // Fungsi untuk menghapus task
         function deleteTask(taskId) {
-            for (const category in tasks) {
-                const index = tasks[category].findIndex(task => task.id === taskId);
-                if (index !== -1) {
-                    tasks[category].splice(index, 1);
-                    renderTasks();
-                    saveToLocalStorage();
-                    break;
+            if (confirm('Apakah Anda yakin ingin menghapus task ini?')) {
+                for (const category in tasks) {
+                    const index = tasks[category].findIndex(task => task.id === taskId);
+                    if (index !== -1) {
+                        tasks[category].splice(index, 1);
+                        renderTasks();
+                        saveToLocalStorage();
+                        break;
+                    }
                 }
             }
         }
