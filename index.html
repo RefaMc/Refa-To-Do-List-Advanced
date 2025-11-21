@@ -610,6 +610,24 @@
         .tasks-container::-webkit-scrollbar-thumb:hover {
             background: var(--accent-button);
         }
+
+        /* Modal konfirmasi styling */
+        .confirmation-modal .modal-content {
+            max-width: 400px;
+        }
+
+        .confirmation-text {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
     </style>
 </head>
 <body>
@@ -625,7 +643,7 @@
                 <button class="btn" onclick="exportData()">
                     <i class="fas fa-file-export"></i> Export Data
                 </button>
-                <button class="btn btn-danger" onclick="clearAllTasks()">
+                <button class="btn btn-danger" onclick="showClearAllConfirmation()">
                     <i class="fas fa-trash"></i> Hapus Semua
                 </button>
             </div>
@@ -698,8 +716,8 @@
                 <div class="form-group">
                     <label class="form-label" for="task-price">Harga (opsional)</label>
                     <div class="currency-group">
-                        <input type="number" class="form-input" id="task-price" placeholder="Masukkan harga" onchange="formatPriceInput()">
-                        <select class="form-select" id="task-currency" onchange="formatPriceInput()">
+                        <input type="number" class="form-input" id="task-price" placeholder="Masukkan harga">
+                        <select class="form-select" id="task-currency">
                             <option value="IDR">IDR</option>
                             <option value="USD">USD</option>
                         </select>
@@ -724,6 +742,25 @@
         </div>
     </div>
 
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal confirmation-modal" id="confirmation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Konfirmasi</div>
+                <button class="close-btn" onclick="closeConfirmationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirmation-text" id="confirmation-text">
+                    Apakah Anda yakin ingin menghapus semua task?
+                </div>
+                <div class="confirmation-buttons">
+                    <button class="btn btn-danger" id="confirm-cancel">Batal</button>
+                    <button class="btn btn-success" id="confirm-ok">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Data contoh
         let tasks = {
@@ -744,6 +781,8 @@
         let currentCategory = '';
         let currentTaskId = null;
         let importCounter = 1;
+        const USD_TO_IDR_RATE = 16000; // 1 USD = 16,000 IDR
+        let pendingAction = null;
 
         // Fungsi untuk format harga
         function formatPrice(price, currency) {
@@ -757,44 +796,23 @@
             return price;
         }
 
-        // Fungsi untuk format input harga
-        function formatPriceInput() {
-            const priceInput = document.getElementById('task-price');
-            const currency = document.getElementById('task-currency').value;
-            const price = parseInt(priceInput.value);
-            
-            if (!isNaN(price) && currency === 'IDR') {
-                // Otomatis tambah 3 nol untuk IDR
-                priceInput.value = price * 1000;
-            }
-        }
-
         // Fungsi untuk menghitung total pendapatan
         function calculateTotalEarnings() {
             let totalIDR = 0;
-            let totalUSD = 0;
             
             tasks.selesai.forEach(task => {
                 if (task.price) {
                     if (task.currency === 'IDR') {
                         totalIDR += task.price;
                     } else if (task.currency === 'USD') {
-                        totalUSD += task.price;
+                        // Konversi USD ke IDR
+                        totalIDR += task.price * USD_TO_IDR_RATE;
                     }
                 }
             });
             
-            let displayText = '';
-            if (totalIDR > 0) {
-                displayText += `Rp ${totalIDR.toLocaleString('id-ID')}`;
-            }
-            if (totalUSD > 0) {
-                if (displayText) displayText += ' + ';
-                displayText += `$${totalUSD.toLocaleString('en-US')}`;
-            }
-            
             document.getElementById('total-earnings').textContent = 
-                `Total Pendapatan: ${displayText || 'Rp 0'}`;
+                `Total Pendapatan: Rp ${totalIDR.toLocaleString('id-ID')}`;
         }
 
         // Fungsi untuk merender task
@@ -872,7 +890,7 @@
                         <button class="task-btn edit-btn" onclick="editTask(${task.id})" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="task-btn delete-btn" onclick="deleteTask(${task.id})" title="Hapus">
+                        <button class="task-btn delete-btn" onclick="showDeleteConfirmation(${task.id})" title="Hapus">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -970,7 +988,7 @@
             const selectedColor = document.querySelector('.color-option.selected').dataset.color;
             
             if (!title) {
-                alert('Judul task harus diisi!');
+                showCustomAlert('Judul task harus diisi!');
                 return;
             }
             
@@ -1016,17 +1034,35 @@
             });
         });
 
+        // Fungsi untuk menampilkan konfirmasi hapus task
+        function showDeleteConfirmation(taskId) {
+            pendingAction = { type: 'deleteTask', taskId: taskId };
+            document.getElementById('confirmation-text').textContent = 'Apakah Anda yakin ingin menghapus task ini?';
+            document.getElementById('confirmation-modal').style.display = 'flex';
+        }
+
+        // Fungsi untuk menampilkan konfirmasi hapus semua
+        function showClearAllConfirmation() {
+            pendingAction = { type: 'clearAll' };
+            document.getElementById('confirmation-text').textContent = 'Apakah Anda yakin ingin menghapus semua task?';
+            document.getElementById('confirmation-modal').style.display = 'flex';
+        }
+
+        // Fungsi untuk menutup modal konfirmasi
+        function closeConfirmationModal() {
+            document.getElementById('confirmation-modal').style.display = 'none';
+            pendingAction = null;
+        }
+
         // Fungsi untuk menghapus task
         function deleteTask(taskId) {
-            if (confirm('Apakah Anda yakin ingin menghapus task ini?')) {
-                for (const category in tasks) {
-                    const index = tasks[category].findIndex(task => task.id === taskId);
-                    if (index !== -1) {
-                        tasks[category].splice(index, 1);
-                        renderTasks();
-                        saveToLocalStorage();
-                        break;
-                    }
+            for (const category in tasks) {
+                const index = tasks[category].findIndex(task => task.id === taskId);
+                if (index !== -1) {
+                    tasks[category].splice(index, 1);
+                    renderTasks();
+                    saveToLocalStorage();
+                    break;
                 }
             }
         }
@@ -1069,6 +1105,13 @@
                     const task = tasks[category][index];
                     tasks[category].splice(index, 1);
                     task.progress = 100;
+                    
+                    // Konversi USD ke IDR jika task dipindahkan ke selesai
+                    if (task.currency === 'USD') {
+                        task.price = task.price * USD_TO_IDR_RATE;
+                        task.currency = 'IDR';
+                    }
+                    
                     tasks.selesai.push(task);
                     break;
                 }
@@ -1118,6 +1161,12 @@
                     taskToMove.progress = 0;
                 } else if (targetCategory === 'selesai') {
                     taskToMove.progress = 100;
+                    
+                    // Konversi USD ke IDR jika task dipindahkan ke selesai
+                    if (taskToMove.currency === 'USD') {
+                        taskToMove.price = taskToMove.price * USD_TO_IDR_RATE;
+                        taskToMove.currency = 'IDR';
+                    }
                 } else if (targetCategory === 'ide' && sourceCategory === 'proses') {
                     taskToMove.progress = 0;
                 }
@@ -1164,12 +1213,12 @@
                     
                     renderTasks();
                     saveToLocalStorage();
-                    alert('Data berhasil diimport!');
+                    showCustomAlert('Data berhasil diimport!');
                     
                     // Update counter import
                     importCounter++;
                 } catch (error) {
-                    alert('Error mengimpor data: File tidak valid');
+                    showCustomAlert('Error mengimpor data: File tidak valid');
                 }
             };
             reader.readAsText(file);
@@ -1180,16 +1229,40 @@
 
         // Fungsi untuk menghapus semua task
         function clearAllTasks() {
-            if (confirm('Apakah Anda yakin ingin menghapus semua task?')) {
-                tasks = {
-                    ide: [],
-                    proses: [],
-                    selesai: []
-                };
-                nextId = 1;
-                renderTasks();
-                saveToLocalStorage();
-            }
+            tasks = {
+                ide: [],
+                proses: [],
+                selesai: []
+            };
+            nextId = 1;
+            renderTasks();
+            saveToLocalStorage();
+        }
+
+        // Fungsi untuk menampilkan alert custom
+        function showCustomAlert(message) {
+            // Buat elemen alert sementara
+            const alertDiv = document.createElement('div');
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: var(--success);
+                color: var(--bg-primary);
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            // Hapus setelah 3 detik
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
         }
 
         // Fungsi untuk menyimpan ke localStorage
@@ -1217,6 +1290,22 @@
                 importCounter = parseInt(savedImportCounter);
             }
         }
+
+        // Event listener untuk modal konfirmasi
+        document.getElementById('confirm-ok').addEventListener('click', function() {
+            if (pendingAction) {
+                if (pendingAction.type === 'deleteTask') {
+                    deleteTask(pendingAction.taskId);
+                } else if (pendingAction.type === 'clearAll') {
+                    clearAllTasks();
+                }
+                closeConfirmationModal();
+            }
+        });
+
+        document.getElementById('confirm-cancel').addEventListener('click', function() {
+            closeConfirmationModal();
+        });
 
         // Inisialisasi
         loadFromLocalStorage();
